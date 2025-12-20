@@ -58,24 +58,45 @@ export function CancellationModal({ isOpen, onClose, onConfirm }: CancellationMo
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
                     {reasons.map((r) => (
-                        <button
-                            key={r}
-                            onClick={() => setReason(r)}
-                            style={{
-                                padding: '0.75rem',
-                                borderRadius: '8px',
-                                border: reason === r ? '1px solid #ef4444' : '1px solid var(--border-subtle)',
-                                backgroundColor: reason === r ? 'rgba(239, 68, 68, 0.05)' : 'var(--bg-input)',
-                                color: reason === r ? '#ef4444' : 'var(--text-secondary)',
-                                cursor: 'pointer',
-                                textAlign: 'left',
-                                fontSize: '0.9rem',
-                                transition: 'all 0.2s',
-                                fontWeight: reason === r ? 600 : 400
-                            }}
-                        >
-                            {r}
-                        </button>
+                        <div key={r}>
+                            <button
+                                onClick={() => setReason(r)}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    borderRadius: '8px',
+                                    border: reason === r || (r === 'Otro' && reasons.indexOf(reason) === -1 && reason !== '') ? '1px solid #ef4444' : '1px solid var(--border-subtle)',
+                                    backgroundColor: reason === r || (r === 'Otro' && reasons.indexOf(reason) === -1 && reason !== '') ? 'rgba(239, 68, 68, 0.05)' : 'var(--bg-input)',
+                                    color: reason === r || (r === 'Otro' && reasons.indexOf(reason) === -1 && reason !== '') ? '#ef4444' : 'var(--text-secondary)',
+                                    cursor: 'pointer',
+                                    textAlign: 'left',
+                                    fontSize: '0.9rem',
+                                    transition: 'all 0.2s',
+                                    fontWeight: reason === r || (r === 'Otro' && reasons.indexOf(reason) === -1 && reason !== '') ? 600 : 400
+                                }}
+                            >
+                                {r}
+                            </button>
+                            {r === 'Otro' && (reason === 'Otro' || (reasons.indexOf(reason) === -1 && reason !== '')) && (
+                                <input
+                                    type="text"
+                                    placeholder="Escribe el motivo..."
+                                    value={reasons.indexOf(reason) === -1 ? reason : ''}
+                                    onChange={(e) => setReason(e.target.value)}
+                                    autoFocus
+                                    style={{
+                                        width: '100%',
+                                        marginTop: '0.5rem',
+                                        padding: '0.75rem',
+                                        borderRadius: '8px',
+                                        border: '1px solid #ef4444',
+                                        backgroundColor: 'var(--bg-input)',
+                                        color: 'var(--text-primary)',
+                                        fontSize: '0.9rem'
+                                    }}
+                                />
+                            )}
+                        </div>
                     ))}
                 </div>
 

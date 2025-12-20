@@ -9,10 +9,21 @@ import {
     RiSettings4Line,
     RiLogoutBoxLine
 } from 'react-icons/ri'
+import { api } from '../services/api'
 
 export function Sidebar(): React.JSX.Element {
     const navigate = useNavigate()
     const location = useLocation()
+
+    const handleLogout = async () => {
+        try {
+            await api.logout();
+            navigate('/login');
+        } catch (e) {
+            console.error(e);
+            navigate('/login');
+        }
+    }
 
     const menuItems = [
         { label: 'Dashboard', icon: RiDashboardLine, path: '/' },
@@ -20,7 +31,7 @@ export function Sidebar(): React.JSX.Element {
         { label: 'Fines de Semana', icon: RiTrophyLine, path: '/weekends' },
         { label: 'Focus Tracker', icon: RiFocus3Line, path: '/tracker' }, // New Analysis Page
         { label: 'Deep Work', icon: RiFocus3Line, path: '/focus' },       // The Timer Page
-        { label: 'Recompensas', icon: RiTrophyLine, path: '/rewards' },
+
         { label: 'Configuración', icon: RiSettings4Line, path: '/settings' }
     ]
 
@@ -92,13 +103,18 @@ export function Sidebar(): React.JSX.Element {
             <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '1.5rem', marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <ThemeToggle />
                 <button
+                    onClick={handleLogout}
                     style={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.75rem',
                         color: 'var(--text-muted)',
                         padding: '0.5rem',
-                        width: '100%'
+                        width: '100%',
+                        cursor: 'pointer',
+                        background: 'transparent',
+                        border: 'none',
+                        fontSize: '1rem'
                     }}
                 >
                     <RiLogoutBoxLine size={20} />

@@ -12,6 +12,7 @@ export interface Habit {
     type: 'weekday' | 'weekend';
     image?: string;
     requiresDeepWork?: boolean;
+    deepWorkWithScreen?: boolean;
 }
 
 export interface Reward {
@@ -42,4 +43,12 @@ export interface UserMetrics {
     streak: number;
     tier: number;
     tierProgress: number; // 0-100
+}
+
+export interface User {
+    id: number | string;
+    name: string;
+    email: string;
+    image_profile?: string;
+    // Add other fields from backend if needed
 }

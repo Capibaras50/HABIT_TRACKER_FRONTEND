@@ -10,37 +10,41 @@ interface CreateHabitModalProps {
     type: 'weekday' | 'weekend'
 }
 
+const WEEKDAY_DAYS = ['L', 'M', 'X', 'J', 'V']
+const WEEKEND_DAYS = ['S', 'D']
+
 export function CreateHabitModal({ isOpen, onClose, onSave, type }: CreateHabitModalProps): React.JSX.Element | null {
     const [title, setTitle] = useState('')
-    const [subtitle, setSubtitle] = useState('')
+
     const [time, setTime] = useState('') // Now a simple string for duration
     const [importance, setImportance] = useState('Media')
-    const [reward, setReward] = useState('10')
     const [requiresDeepWork, setRequiresDeepWork] = useState(false)
+    const [deepWorkWithScreen, setDeepWorkWithScreen] = useState(false)
+    const [selectedDays, setSelectedDays] = useState<string[]>([])
 
     // Reset form when modal opens
     useEffect(() => {
         if (isOpen) {
             setTitle('')
-            setSubtitle('')
             setTime('')
             setImportance('Media')
-            setReward('10')
             setRequiresDeepWork(false)
+            setDeepWorkWithScreen(false)
+            setSelectedDays(type === 'weekday' ? [...WEEKDAY_DAYS] : [...WEEKEND_DAYS])
         }
-    }, [isOpen])
+    }, [isOpen, type])
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
         onSave({
             title,
-            subtitle,
             time,
             importance,
-            reward: parseInt(reward),
+            reward: 10,
             requiresDeepWork,
+            deepWorkWithScreen,
             completions: [],
-            days: type === 'weekday' ? ['L', 'M', 'X', 'J', 'V'] : ['S', 'D'] // Default all days for type
+            days: selectedDays
         })
         onClose()
     }
@@ -79,28 +83,15 @@ export function CreateHabitModal({ isOpen, onClose, onSave, type }: CreateHabitM
                         />
                     </div>
 
-                    {/* Subtitle Input */}
-                    <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Subtítulo (Opcional)</label>
-                        <input
-                            type="text"
-                            placeholder="Ej. Capitulo 3"
-                            value={subtitle}
-                            onChange={(e) => setSubtitle(e.target.value)}
-                            style={{
-                                width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)',
-                                backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: '1rem'
-                            }}
-                        />
-                    </div>
 
-                    {/* Time (Duration) & Reward Row */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+
+                    {/* Time (Duration) */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
                         <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Tiempo / Duración</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Tiempo (minutos)</label>
                             <input
-                                type="text"
-                                placeholder="Ej. 30 min"
+                                type="number"
+                                placeholder="Ej. 30"
                                 value={time}
                                 onChange={(e) => setTime(e.target.value)}
                                 style={{
@@ -108,20 +99,42 @@ export function CreateHabitModal({ isOpen, onClose, onSave, type }: CreateHabitM
                                     backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: '1rem'
                                 }}
                                 required
+                                min="1"
                             />
                         </div>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Recompensa (XP)</label>
-                            <input
-                                type="number"
-                                placeholder="10"
-                                value={reward}
-                                onChange={(e) => setReward(e.target.value)}
-                                style={{
-                                    width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)',
-                                    backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: '1rem'
-                                }}
-                            />
+                    </div>
+
+                    {/* Days Selection */}
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Días</label>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            {(type === 'weekday' ? WEEKDAY_DAYS : WEEKEND_DAYS).map(day => {
+                                const isSelected = selectedDays.includes(day)
+                                return (
+                                    <button
+                                        key={day}
+                                        type="button"
+                                        onClick={() => {
+                                            if (isSelected) {
+                                                setSelectedDays(selectedDays.filter(d => d !== day))
+                                            } else {
+                                                setSelectedDays([...selectedDays, day])
+                                            }
+                                        }}
+                                        style={{
+                                            width: '32px', height: '32px', borderRadius: '50%',
+                                            border: '1px solid',
+                                            borderColor: isSelected ? 'var(--accent-primary)' : 'var(--border-subtle)',
+                                            backgroundColor: isSelected ? 'var(--accent-primary)' : 'transparent',
+                                            color: isSelected ? 'white' : 'var(--text-secondary)',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem'
+                                        }}
+                                    >
+                                        {day}
+                                    </button>
+                                )
+                            })}
                         </div>
                     </div>
 
@@ -180,6 +193,34 @@ export function CreateHabitModal({ isOpen, onClose, onSave, type }: CreateHabitM
                             }}></span>
                         </label>
                     </div>
+
+                    {/* Deep Work Screen Option - Only if Deep Work is selected */}
+                    {requiresDeepWork && (
+                        <div style={{ marginLeft: '1rem', marginTop: '0.5rem', padding: '0.75rem', borderLeft: '3px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>¿Requiere Pantalla?</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Si activas esto, se rastreará tu actividad en PC.</div>
+                            </div>
+                            <label style={{ position: 'relative', display: 'inline-block', width: '36px', height: '20px' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={deepWorkWithScreen}
+                                    onChange={(e) => setDeepWorkWithScreen(e.target.checked)}
+                                    style={{ opacity: 0, width: 0, height: 0 }}
+                                />
+                                <span style={{
+                                    position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
+                                    backgroundColor: deepWorkWithScreen ? 'var(--accent-primary)' : '#ccc',
+                                    transition: '.4s', borderRadius: '34px'
+                                }}></span>
+                                <span style={{
+                                    position: 'absolute', content: '""', height: '12px', width: '12px', left: '4px', bottom: '4px',
+                                    backgroundColor: 'white', transition: '.4s', borderRadius: '50%',
+                                    transform: deepWorkWithScreen ? 'translateX(16px)' : 'translateX(0)'
+                                }}></span>
+                            </label>
+                        </div>
+                    )}
 
                     <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
                         <Button type="button" variant="ghost" onClick={onClose} style={{ flex: 1 }}>

@@ -1,238 +1,267 @@
-import { Habit, Reward, FocusSession, UserMetrics } from '../types';
-
-// --- MOCK DATA ---
-
-let habits: Habit[] = [
-    {
-        id: 1,
-        title: 'Revisión Diaria',
-        subtitle: 'Planificar objetivos del día',
-        status: 'pending',
-        time: '09:00 AM',
-        reward: 10,
-        type: 'weekday'
-    },
-    {
-        id: 2,
-        title: 'Deep Work (Bloque 1)',
-        subtitle: 'Sin distracciones',
-        status: 'completed',
-        time: '10:00 AM - 11:30 AM',
-        reward: 50,
-        type: 'weekday'
-    },
-    {
-        id: 3,
-        title: 'Ejercicio',
-        subtitle: 'Caminata o Gimnasio',
-        status: 'pending',
-        time: '06:00 PM',
-        reward: 30,
-        type: 'weekday'
-    },
-    {
-        id: 4,
-        title: 'Lectura',
-        subtitle: '30 min de libro técnico',
-        status: 'pending',
-        time: 'Before Bed',
-        reward: 20,
-        type: 'weekday'
-    },
-    // Weekend Habits
-    {
-        id: 5,
-        title: 'Repaso de Matemáticas',
-        subtitle: 'Cálculo Integral - Cap 4',
-        status: 'pending',
-        importance: 'Alta',
-        time: '1h 30m',
-        reward: 50,
-        type: 'weekend',
-        days: ['S', 'D']
-    },
-    {
-        id: 6,
-        title: 'Lectura Técnica',
-        subtitle: 'Documentación de proyecto',
-        status: 'completed',
-        importance: 'Media',
-        time: '45m',
-        reward: 30,
-        type: 'weekend',
-        days: ['S']
-    },
-    {
-        id: 7,
-        title: 'Organización Semanal',
-        subtitle: 'Planificar agenda',
-        status: 'completed',
-        importance: 'Baja',
-        time: '15m',
-        reward: 10,
-        type: 'weekend',
-        days: ['D']
-    },
-    {
-        id: 8,
-        title: 'Ejercicio Físico',
-        subtitle: 'Correr 5km',
-        status: 'pending',
-        importance: 'Alta',
-        time: '1h',
-        reward: 100,
-        type: 'weekend',
-        days: ['S', 'D']
-    }
-];
-
-const rewards: Reward[] = [
-    {
-        id: 1,
-        title: 'Descanso Corto',
-        description: 'Recarga energía con una siesta o caminata.',
-        cost: 500,
-        imageColor: '#0ea5e9',
-        iconName: 'RiCupLine',
-        duration: '30 min',
-        locked: false
-    },
-    {
-        id: 2,
-        title: 'Episodio de Serie',
-        description: 'Disfruta un capítulo sin distracciones.',
-        cost: 900,
-        imageColor: '#ef4444',
-        iconName: 'RiMovieLine',
-        duration: '1h',
-        locked: false
-    },
-    {
-        id: 3,
-        title: 'Sesión de Gaming',
-        description: 'Tiempo libre para jugar en PC o Consola.',
-        cost: 1200,
-        imageColor: '#6366f1',
-        iconName: 'RiGamepadLine',
-        duration: '1.5h',
-        locked: true
-    },
-    {
-        id: 4,
-        title: 'Día Libre (Parcial)',
-        description: 'Tómate la tarde libre. Te lo mereces.',
-        cost: 3000,
-        imageColor: '#14b8a6',
-        iconName: 'RiWallet3Line',
-        duration: 'Medio Día',
-        locked: true
-    }
-];
-
-const userMetrics: UserMetrics = {
-    focusScore: 85,
-    totalFocusTime: '4h 12m',
-    interruptionCount: 12,
-    points: 1250,
-    streak: 5,
-    tier: 3,
-    tierProgress: 66
-};
-
-const focusHistory: FocusSession[] = [
-    {
-        id: 1,
-        activityName: 'Desarrollo Frontend',
-        category: 'Programación',
-        startTime: new Date().toISOString(), // Mock, fix earlier today
-        durationMinutes: 50,
-        effectiveness: 95
-    },
-    {
-        id: 2,
-        activityName: 'Lectura de Documentación',
-        category: 'Estudio',
-        startTime: new Date().toISOString(),
-        durationMinutes: 30,
-        effectiveness: 70
-    }
-];
-
-// --- SERVICE FUNCTIONS ---
-
-// NOTE: All functions return Promises to simulate network latency
+import { Habit, FocusSession, UserMetrics, User } from '../types';
+import { apiInstance } from './api.config';
 
 export const api = {
+    // Auth
+    login: async (email: string, password: string): Promise<{ user: User }> => {
+        const response = await apiInstance.post('/auth/login', { email, password });
+        return response.data;
+    },
+
+    register: async (userData: any): Promise<{ user: User }> => {
+        const response = await apiInstance.post('/auth/register', userData);
+        return response.data;
+    },
+
+    logout: async (): Promise<void> => {
+        await apiInstance.delete('/auth/logout');
+    },
+
+    getUserProfile: async (): Promise<any> => {
+        const response = await apiInstance.get('/users'); // Corrected: router.get('/') mounted on /users
+        return response.data;
+    },
+
+    updateUserName: async (name: string): Promise<any> => {
+        const response = await apiInstance.patch('/users', { name });
+        return response.data;
+    },
+
+    changeEmail: async (email: string): Promise<any> => {
+        const response = await apiInstance.patch('/auth/change-email', { email });
+        return response.data;
+    },
+
+    changePassword: async (oldPassword: string, newPassword: string): Promise<any> => {
+        const response = await apiInstance.patch('/auth/change-password', { oldPassword, newPassword });
+        return response.data;
+    },
+
+    uploadUserImage: async (file: File): Promise<any> => {
+        const formData = new FormData();
+        formData.append('image-profile', file);
+        const response = await apiInstance.post('/users/upload-image', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+        return response.data;
+    },
+
     // Habits
-    getHabits: async (type: 'weekday' | 'weekend'): Promise<Habit[]> => {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                resolve(habits.filter((h) => h.type === type))
-            }, 500)
-        })
+    getHabits: async (type?: 'weekday' | 'weekend'): Promise<Habit[]> => {
+        // Map type to isInWeek (true/false)
+        // Default to weekday if not specified, or handle logic as needed
+        const params: any = {}
+        if (type === 'weekday') params.isInWeek = true
+        if (type === 'weekend') params.isInWeek = false
+        
+        const response = await apiInstance.get('/habits', { params });
+        // Backend now returns habits with completions array and parsed days
+        // We need to map backend helper fields if necessary, but response should be close to Habit type
+        // Backend keys: name, importance, days, time, is_in_week, user_id, need_deep_work, completions
+        // Frontend Habit type: id, title (name), subtitle (need generic?), time, importance, type (computed?), reward (mock?), requiresDeepWork, completions
+        
+        return response.data.map((h: any) => ({
+            id: h.id,
+            title: h.name,
+            subtitle: h.description || '', // Backend doesn't seem to have description/subtitle yet, use empty or generic
+            time: h.time,
+            importance: h.importance,
+            type: h.is_in_week ? 'weekday' : 'weekend',
+            reward: 10, // Mock reward as backend doesn't store it yet
+            requiresDeepWork: h.need_deep_work,
+            deepWorkWithScreen: h.deep_work_with_screen,
+            completions: h.completions || [],
+            days: h.days,
+            status: 'pending' // Default status, as backend doesn't track active/archived state explicitly in the way frontend expects yet
+        }));
     },
 
     createHabit: async (habit: Omit<Habit, 'id'>): Promise<Habit> => {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                const newHabit = { ...habit, id: Date.now() }
-                habits.push(newHabit)
-                resolve(newHabit)
-            }, 500)
-        })
+        // Map frontend model to backend schema
+        const payload = {
+            name: habit.title,
+            importance: habit.importance,
+            days: (habit.days || []).map(d => {
+                const map: {[key: string]: string} = {
+                    'L': 'Lunes', 'M': 'Martes', 'X': 'Miercoles', 'J': 'Jueves', 'V': 'Viernes',
+                    'S': 'Sabado', 'D': 'Domingo'
+                }
+                return map[d] || d
+            }),
+            time: parseInt(habit.time as unknown as string), // Ensure int
+            isInWeek: habit.type === 'weekday',
+            needDeepWork: habit.requiresDeepWork,
+            deepWorkWithScreen: habit.deepWorkWithScreen || false
+        };
+        const response = await apiInstance.post('/habits', payload);
+        const h = response.data.habit;
+        return {
+            id: h.id,
+            title: h.name,
+            subtitle: '',
+            time: h.time,
+            importance: h.importance,
+            type: h.is_in_week ? 'weekday' : 'weekend',
+            reward: 10,
+            requiresDeepWork: h.need_deep_work,
+            completions: h.completions || [],
+            days: h.days,
+            status: 'pending'
+        };
     },
 
-    updateHabitStatus: async (id: number | string, status: 'completed' | 'pending', completions?: string[]): Promise<Habit> => {
-        return new Promise((resolve, reject) => {
-            setTimeout(() => {
-                const habitIndex = habits.findIndex((h) => h.id === id)
-                if (habitIndex > -1) {
-                    habits[habitIndex].status = status
-                    if (completions) {
-                        habits[habitIndex].completions = completions
-                    }
-                    resolve(habits[habitIndex])
-                } else {
-                    reject(new Error('Habit not found'))
-                }
-            }, 200)
-        })
+    deleteHabit: async (id: number | string): Promise<void> => {
+        await apiInstance.delete(`/habits/${id}`);
+    },
+
+    updateHabit: async (id: number | string, habit: Partial<Habit>): Promise<Habit> => {
+        // Map frontend model to backend schema
+        const payload: any = {};
+        
+        if (habit.title !== undefined) payload.name = habit.title;
+        if (habit.importance !== undefined) payload.importance = habit.importance;
+        if (habit.time !== undefined) payload.time = parseInt(habit.time as unknown as string);
+        if (habit.requiresDeepWork !== undefined) payload.needDeepWork = habit.requiresDeepWork;
+        if (habit.deepWorkWithScreen !== undefined) payload.deepWorkWithScreen = habit.deepWorkWithScreen;
+        if (habit.type !== undefined) payload.isInWeek = habit.type === 'weekday';
+        if (habit.days !== undefined) {
+            payload.days = habit.days.map(d => {
+                const map: {[key: string]: string} = {
+                    'L': 'Lunes', 'M': 'Martes', 'X': 'Miercoles', 'J': 'Jueves', 'V': 'Viernes',
+                    'S': 'Sabado', 'D': 'Domingo'
+                };
+                return map[d] || d;
+            });
+        }
+        
+        const response = await apiInstance.patch(`/habits/${id}`, payload);
+        const h = response.data.habit || response.data;
+        return {
+            id: h.id,
+            title: h.name,
+            subtitle: '',
+            time: h.time,
+            importance: h.importance,
+            type: h.is_in_week ? 'weekday' : 'weekend',
+            reward: 10,
+            requiresDeepWork: h.need_deep_work,
+            deepWorkWithScreen: h.deep_work_with_screen,
+            completions: h.completions || [],
+            days: h.days,
+            status: 'pending'
+        };
+    },
+
+    updateHabitStatus: async (id: number | string, status: 'completed' | 'pending', difficulty: number = 3): Promise<any> => {
+        if (status === 'completed') {
+             const days = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
+             const todayName = days[new Date().getDay()];
+             
+             return await apiInstance.post(`/habits/complete-habit/${id}`, { 
+                 dayCompleted: todayName,
+                 difficulty: difficulty
+             });
+        } else {
+             // "Undo" completion. Backend doesn't support generic undo yet or removal from Habits_Completed via ID easily exposed?
+             // Actually, we can't easily undo with current backend. 
+             // We will throw error or just do nothing and let frontend stay optimistic (but it will revert on reload).
+             // Better: Log warning.
+             console.warn("Undo completion not fully supported by backend yet.");
+             // Try valid update if strictly needed, or just return mock success to satisfy UI for session
+             return { message: "Undo simulated" };
+        }
     },
 
     // Rewards
-    getRewards: async (): Promise<Reward[]> => {
-        return new Promise((resolve) => resolve(rewards));
+
+
+    redeemReward: async (_id: number | string): Promise<{ success: boolean; message: string }> => {
+        // Mock
+        return { success: true, message: 'Redeemed (Mock)' };
     },
 
-    redeemReward: async (id: number | string): Promise<{ success: boolean; message: string }> => {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                const reward = rewards.find(r => r.id === id);
-                if (!reward) {
-                    resolve({ success: false, message: 'Reward not found' });
-                    return;
-                }
-                if (userMetrics.points >= reward.cost) {
-                    userMetrics.points -= reward.cost;
-                    resolve({ success: true, message: 'Redeemed successfully' });
-                } else {
-                    resolve({ success: false, message: 'Insufficient points' });
-                }
-            }, 400);
-        });
+    // Focus & Deep Work
+    createDeepWork: async (habitId: string | number, sessionData: any): Promise<any> => {
+        // sessionData should match backend schema
+        const response = await apiInstance.post(`/deep-work/create/${habitId}`, sessionData);
+        return response.data;
     },
 
-    // Metrics & Focus
+    cancelHabit: async (habitId: string | number, cancelData: {
+        cancelReason: string,
+        focusPercent?: number,
+        mentalHealthPercent?: number,
+        difficulty: number
+    }): Promise<any> => {
+        const response = await apiInstance.post(`/habits/cancel-habit/${habitId}`, cancelData);
+        return response.data;
+    },
+
+    // Focus Router
+    getFocusSummary: async (period?: string): Promise<any> => {
+        const response = await apiInstance.get('/focus/summary', { params: { period } });
+        return response.data;
+    },
+
+    getFocusDay: async (date: string): Promise<any> => {
+        const response = await apiInstance.get(`/focus/day/${date}`);
+        return response.data;
+    },
+    
+    // Metrics & Focus (Frontend abstractions)
     getUserMetrics: async (): Promise<UserMetrics> => {
-        return new Promise((resolve) => resolve(userMetrics));
+        try {
+            // Mapping backend response to UserMetrics
+            // Assuming getFocusSummary returns something relevant or we have a specific user/stats endpoint
+            const summary = await apiInstance.get('/focus/summary');
+            // Mock transformation if backend structure is different
+            return {
+                 focusScore: summary.data.score || 85,
+                 totalFocusTime: summary.data.totalTime || '0h 0m',
+                 interruptionCount: summary.data.interruptions || 0,
+                 points: summary.data.points || 0,
+                 streak: summary.data.streak || 0,
+                 tier: summary.data.tier || 1,
+                 tierProgress: summary.data.tierProgress || 0
+            };
+        } catch (e) {
+            console.error(e);
+            return {
+                focusScore: 0,
+                totalFocusTime: '0h 0m',
+                interruptionCount: 0,
+                points: 0,
+                streak: 0,
+                tier: 1,
+                tierProgress: 0
+            };
+        }
     },
 
     getFocusHistory: async (): Promise<FocusSession[]> => {
-        return new Promise((resolve) => resolve(focusHistory));
+        try {
+            const response = await apiInstance.get('/focus/range', { 
+                params: { 
+                    startDate: new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString(),
+                    endDate: new Date().toISOString()
+                }
+            }); 
+            return response.data.map((item: any) => ({
+                id: item._id || item.id,
+                activityName: item.title || 'Focus Session',
+                category: 'Work',
+                startTime: item.date || item.createdAt,
+                durationMinutes: item.duration || 0,
+                effectiveness: item.score || 100
+            }));
+        } catch (e) {
+            return [];
+        }
     },
 
     logCancellation: async (reason: string): Promise<void> => {
          console.log(`[API] Logged cancellation: ${reason}`);
-         return Promise.resolve();
     }
 };

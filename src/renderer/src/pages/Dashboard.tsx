@@ -1,9 +1,74 @@
-import React from 'react'
-import { RiFlashlightFill, RiFireFill, RiBrainLine, RiPlayFill, RiCheckLine, RiCheckboxBlankCircleLine } from 'react-icons/ri'
+import React, { useEffect, useState } from 'react'
+import { RiFlashlightFill, RiFireFill, RiBrainLine, RiPlayFill, RiCheckboxBlankCircleLine, RiTimeLine } from 'react-icons/ri'
 import { Card } from '../components/Card'
 import { Button } from '../components/Button'
+import { api } from '../services/api'
+import { Habit } from '../types'
+import { useNavigate } from 'react-router-dom'
 
 export default function Dashboard(): React.JSX.Element {
+    const [loading, setLoading] = useState(true)
+    const [habits, setHabits] = useState<Habit[]>([])
+    const [streak, setStreak] = useState(0)
+    const [focusPercent, setFocusPercent] = useState(0)
+    const navigate = useNavigate()
+
+    const getGreeting = () => {
+        const hour = new Date().getHours()
+        if (hour < 12) return 'Good Morning'
+        if (hour < 18) return 'Good Afternoon'
+        return 'Good Night'
+    }
+
+    useEffect(() => {
+        const loadDashboardData = async () => {
+            try {
+                const today = new Date().toISOString().split('T')[0]
+
+                // Fetch basic data
+                const [habitsData, userProfile] = await Promise.all([
+                    api.getHabits(),
+                    api.getUserProfile().catch(() => ({ streak: 0 }))
+                ])
+                setHabits(habitsData)
+                if (userProfile) setStreak(userProfile.streak)
+
+                // Fetch Focus Day (might 404 if no data yet)
+                try {
+                    const focusDayData = await api.getFocusDay(today)
+                    if (focusDayData && focusDayData.focusDay) {
+                        setFocusPercent(Math.round(focusDayData.focusDay.focus_percentage) || 0)
+                    }
+                } catch (e) {
+                    setFocusPercent(0)
+                }
+
+            } catch (error) {
+                console.error("Failed to load dashboard data", error)
+            } finally {
+                setLoading(false)
+            }
+        }
+        loadDashboardData()
+    }, [])
+
+    if (loading) {
+        return <div style={{ padding: '2rem' }}>Cargando dashboard...</div>
+    }
+
+    const pendingHabits = habits.filter(h => h.status === 'pending')
+    const nextHabit = pendingHabits[0]
+
+    const formatDuration = (timeStr: string) => {
+        const minutes = parseInt(timeStr)
+        if (isNaN(minutes)) return timeStr
+        if (minutes < 60) return `${minutes} min`
+        const hours = Math.floor(minutes / 60)
+        const remainingMins = minutes % 60
+        if (remainingMins === 0) return `${hours}h`
+        return `${hours}h ${remainingMins}m`
+    }
+
     return (
         <div>
             <header style={{ marginBottom: '2rem' }}>
@@ -14,7 +79,7 @@ export default function Dashboard(): React.JSX.Element {
                         day: 'numeric'
                     }).format(new Date())}
                 </h2>
-                <h1 style={{ fontSize: '2rem', fontWeight: 700, margin: 0 }}>Good morning, Alex</h1>
+                <h1 style={{ fontSize: '2rem', fontWeight: 700, margin: 0 }}>{getGreeting()}</h1>
             </header>
 
             {/* Stats Row */}
@@ -22,10 +87,10 @@ export default function Dashboard(): React.JSX.Element {
                 <Card>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div>
-                            <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>TOTAL POINTS</p>
+                            <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>MENTAL SCORE</p>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
-                                <h3 style={{ fontSize: '1.75rem', fontWeight: 700, margin: 0 }}>2,450</h3>
-                                <span style={{ fontSize: '0.75rem', backgroundColor: 'var(--accent-dim)', color: 'var(--accent-primary)', padding: '2px 6px', borderRadius: '4px' }}>+150 today</span>
+                                <h3 style={{ fontSize: '1.75rem', fontWeight: 700, margin: 0 }}>N/A</h3>
+                                <span style={{ fontSize: '0.75rem', backgroundColor: 'var(--accent-dim)', color: 'var(--accent-primary)', padding: '2px 6px', borderRadius: '4px' }}>Coming Soon</span>
                             </div>
                         </div>
                         <RiFlashlightFill size={24} style={{ color: 'var(--accent-primary)' }} />
@@ -37,7 +102,7 @@ export default function Dashboard(): React.JSX.Element {
                         <div>
                             <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>DAILY STREAK</p>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
-                                <h3 style={{ fontSize: '1.75rem', fontWeight: 700, margin: 0 }}>5 Days</h3>
+                                <h3 style={{ fontSize: '1.75rem', fontWeight: 700, margin: 0 }}>{streak} Days</h3>
                                 <span style={{ fontSize: '0.75rem', backgroundColor: '#92400e40', color: '#f59e0b', padding: '2px 6px', borderRadius: '4px' }}>Keep it up!</span>
                             </div>
                         </div>
@@ -48,10 +113,10 @@ export default function Dashboard(): React.JSX.Element {
                 <Card>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div>
-                            <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>MENTAL STATE</p>
+                            <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>FOCUS PERCENTAGE</p>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
-                                <h3 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>High Energy</h3>
-                                <span style={{ fontSize: '0.75rem', backgroundColor: '#3b82f620', color: '#3b82f6', padding: '2px 6px', borderRadius: '4px' }}>Stable</span>
+                                <h3 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>{focusPercent}%</h3>
+                                <span style={{ fontSize: '0.75rem', backgroundColor: '#3b82f620', color: '#3b82f6', padding: '2px 6px', borderRadius: '4px' }}>Today</span>
                             </div>
                         </div>
                         <RiBrainLine size={24} style={{ color: '#3b82f6' }} />
@@ -61,7 +126,6 @@ export default function Dashboard(): React.JSX.Element {
 
             {/* Main Focus Section */}
             <div style={{ marginBottom: '2rem' }}>
-                {/* Focus Widget */}
                 <Card>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', height: '100%', justifyContent: 'space-between', padding: '0 1rem' }}>
                         <div>
@@ -70,63 +134,61 @@ export default function Dashboard(): React.JSX.Element {
                             </span>
                             <h2 style={{ fontSize: '2rem', margin: '0 0 0.5rem 0' }}>Ready to Focus?</h2>
                             <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-                                Your next scheduled activity is <strong style={{ color: 'var(--text-primary)' }}>Math Study</strong>.
+                                {nextHabit ? (
+                                    <>Your next scheduled activity is <strong style={{ color: 'var(--text-primary)' }}>{nextHabit.title}</strong>.</>
+                                ) : (
+                                    "No pending activities for today!"
+                                )}
                             </p>
-                            <Button variant="primary" style={{ padding: '0.75rem 2rem', fontSize: '1rem' }}>
+                            <Button
+                                variant="primary"
+                                style={{ padding: '0.75rem 2rem', fontSize: '1rem' }}
+                                onClick={() => {
+                                    if (nextHabit) {
+                                        navigate('/focus', { state: { habitId: nextHabit.id, habitTitle: nextHabit.title } })
+                                    } else {
+                                        navigate('/focus')
+                                    }
+                                }}
+                            >
                                 <RiPlayFill size={20} /> Start Session
                             </Button>
                         </div>
-                        {/* Simple CSS Circle representation */}
-                        <div style={{ position: 'relative', width: '140px', height: '140px', borderRadius: '50%', border: '8px solid var(--bg-input)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <div style={{ position: 'absolute', top: '-8px', right: '-8px', bottom: '-8px', left: '-8px', borderRadius: '50%', border: '8px solid var(--accent-primary)', borderLeftColor: 'transparent', borderBottomColor: 'transparent', transform: 'rotate(45deg)' }}></div>
-                            <div style={{ textAlign: 'center' }}>
-                                <div style={{ fontSize: '1.75rem', fontWeight: 700 }}>45:00</div>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>MINUTES</div>
-                            </div>
+
+                        <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '1.75rem', fontWeight: 700 }}>25:00</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>MINUTES</div>
                         </div>
                     </div>
                 </Card>
-
             </div>
 
             {/* Mandatory Activities */}
             <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0 }}>Mandatory Activities</h3>
-                    <button style={{ color: 'var(--accent-primary)', fontSize: '0.9rem', fontWeight: 600 }}>View Calendar</button>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0 }}>Pending Activities</h3>
                 </div>
-
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <Card style={{ padding: '1rem 1.5rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                <RiCheckboxBlankCircleLine size={24} style={{ color: 'var(--text-muted)' }} />
-                                <div>
-                                    <div style={{ fontWeight: 600 }}>Math Study: Calculus Chapter 4</div>
-                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                                        <span style={{ marginRight: '0.5rem' }}>30 min</span>
-                                        <span style={{ color: '#f59e0b' }}>High Priority</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <Button variant="secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}>To Do</Button>
-                        </div>
-                    </Card>
+                    {pendingHabits.length === 0 && (
+                        <div style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>No pending habits. Great job!</div>
+                    )}
 
-                    <Card style={{ padding: '1rem 1.5rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                <RiCheckLine size={24} style={{ color: 'var(--accent-primary)' }} />
-                                <div style={{ opacity: 0.6 }}>
-                                    <div style={{ fontWeight: 600, textDecoration: 'line-through' }}>Morning Meditation</div>
-                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                                        <span style={{ marginRight: '0.5rem' }}>10 min</span>
+                    {pendingHabits.slice(0, 5).map(habit => (
+                        <Card key={habit.id} style={{ padding: '1rem 1.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    <RiCheckboxBlankCircleLine size={24} style={{ color: 'var(--text-muted)' }} />
+                                    <div>
+                                        <div style={{ fontWeight: 600 }}>{habit.title}</div>
+                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                            <RiTimeLine size={14} />
+                                            <span>{formatDuration(habit.time)}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <span style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', fontWeight: 600, padding: '0.5rem 1rem' }}>Completed</span>
-                        </div>
-                    </Card>
+                        </Card>
+                    ))}
                 </div>
             </div>
         </div>
